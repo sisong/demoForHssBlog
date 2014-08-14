@@ -1,0 +1,39 @@
+# Project: RotaryTest
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = 
+OBJ  = ./build/RotaryTest.o ./build/hBmpFile.o ./build/hPixels32.o ./build/hStream.o $(RES)
+LINKOBJ  = ./build/RotaryTest.o ./build/hBmpFile.o ./build/hPixels32.o ./build/hStream.o $(RES)
+LIBS =  -L"d:/Dev-Cpp/lib"  -march=pentium4 
+INCS =  -I"d:/Dev-Cpp/include" 
+CXXINCS =  -I"d:/Dev-Cpp/include/c++"  -I"d:/Dev-Cpp/include/c++/mingw32"  -I"d:/Dev-Cpp/include/c++/backward"  -I"d:/Dev-Cpp/include" 
+BIN  = ../RotaryTest_DevC++.exe
+CXXFLAGS = $(CXXINCS)   -fexpensive-optimizations -O3 -march=pentium4
+CFLAGS = $(INCS)   -fexpensive-optimizations -O3 -march=pentium4
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before ../RotaryTest_DevC++.exe all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CPP) $(LINKOBJ) -o "..\RotaryTest_DevC++.exe" $(LIBS)
+
+./build/RotaryTest.o: ../RotaryTest.cpp
+	$(CPP) -c ../RotaryTest.cpp -o ./build/RotaryTest.o $(CXXFLAGS)
+
+./build/hBmpFile.o: ../../hGraphic32/hBmpFile.cpp
+	$(CPP) -c ../../hGraphic32/hBmpFile.cpp -o ./build/hBmpFile.o $(CXXFLAGS)
+
+./build/hPixels32.o: ../../hGraphic32/hPixels32.cpp
+	$(CPP) -c ../../hGraphic32/hPixels32.cpp -o ./build/hPixels32.o $(CXXFLAGS)
+
+./build/hStream.o: ../../hGraphic32/hStream.cpp
+	$(CPP) -c ../../hGraphic32/hStream.cpp -o ./build/hStream.o $(CXXFLAGS)

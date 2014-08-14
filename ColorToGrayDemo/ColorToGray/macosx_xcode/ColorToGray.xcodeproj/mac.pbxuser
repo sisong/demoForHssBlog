@@ -1,0 +1,288 @@
+// !$*UTF8*$!
+{
+	0439A6290F1DB1A0000825AC /* ColorToGray */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 0;
+		configStateDict = {
+		};
+		customDataFormattersEnabled = 1;
+		debuggerPlugin = GDBDebugging;
+		disassemblyDisplayState = 0;
+		dylibVariantSuffix = "";
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		libgmallocEnabled = 0;
+		name = ColorToGray;
+		savedGlobals = {
+		};
+		sourceDirectories = (
+		);
+	};
+	0439A62C0F1DB1C2000825AC /* Source Control */ = {
+		isa = PBXSourceControlManager;
+		fallbackIsa = XCSourceControlManager;
+		isSCMEnabled = 0;
+		scmConfiguration = {
+		};
+	};
+	0439A62D0F1DB1C2000825AC /* Code sense */ = {
+		isa = PBXCodeSenseManager;
+		indexTemplatePath = "";
+	};
+	0439A63D0F1DB225000825AC /* hColor32.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1411, 1232}}";
+			sepNavSelRange = "{0, 0}";
+			sepNavVisRange = "{0, 1673}";
+		};
+	};
+	0439A6410F1DB225000825AC /* hStream.cpp */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1411, 2436}}";
+			sepNavSelRange = "{286, 5}";
+			sepNavVisRange = "{0, 1332}";
+			sepNavWindowFrame = "{{15, 55}, {935, 968}}";
+		};
+	};
+	0439A6460F1DB233000825AC /* ColorToGray.cpp */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1411, 5586}}";
+			sepNavSelRange = "{13939, 0}";
+			sepNavVisRange = "{13176, 1667}";
+		};
+	};
+	0439A6630F1DB4BF000825AC /* hStream.cpp:13 */ = {
+		isa = PBXFileBreakpoint;
+		actions = (
+		);
+		breakpointStyle = 0;
+		continueAfterActions = 0;
+		countType = 0;
+		delayBeforeContinue = 0;
+		fileReference = 0439A6410F1DB225000825AC /* hStream.cpp */;
+		functionName = "_file_create(const char* fileName)";
+		hitCount = 0;
+		ignoreCount = 0;
+		lineNumber = 13;
+		location = ColorToGray;
+		modificationTime = 253605088.40991;
+		state = 2;
+	};
+	0439A66D0F1DB4E6000825AC /* stdio.h */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = sourcecode.c.h;
+		name = stdio.h;
+		path = /Developer/SDKs/MacOSX10.5.sdk/usr/include/stdio.h;
+		sourceTree = "<absolute>";
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1411, 5740}}";
+			sepNavSelRange = "{9225, 63}";
+			sepNavVisRange = "{8258, 1688}";
+		};
+	};
+	0439A6760F1DB56A000825AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 0439A66D0F1DB4E6000825AC /* stdio.h */;
+		name = "stdio.h: 257";
+		rLen = 63;
+		rLoc = 9225;
+		rType = 0;
+		vrLen = 1688;
+		vrLoc = 8258;
+	};
+	0439A6860F1DB7F2000825AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 0439A6410F1DB225000825AC /* hStream.cpp */;
+		name = "hStream.cpp: 13";
+		rLen = 5;
+		rLoc = 286;
+		rType = 0;
+		vrLen = 1332;
+		vrLoc = 0;
+	};
+	0439A6BE0F1DC1C3000825AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 0439A6BF0F1DC1C3000825AC /* inifile.h */;
+		name = "inifile.h: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 618;
+		vrLoc = 0;
+	};
+	0439A6BF0F1DC1C3000825AC /* inifile.h */ = {
+		isa = PBXFileReference;
+		name = inifile.h;
+		path = /Users/mac/Desktop/inifile/inifile.h;
+		sourceTree = "<absolute>";
+	};
+	0439A6C00F1DC1C3000825AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 0439A6C10F1DC1C3000825AC /* inifile.c */;
+		name = "inifile.c: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 947;
+		vrLoc = 5719;
+	};
+	0439A6C10F1DC1C3000825AC /* inifile.c */ = {
+		isa = PBXFileReference;
+		name = inifile.c;
+		path = /Users/mac/Desktop/inifile/inifile.c;
+		sourceTree = "<absolute>";
+	};
+	0439A6C20F1DC1C3000825AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 0439A63D0F1DB225000825AC /* hColor32.h */;
+		name = "hColor32.h: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 1673;
+		vrLoc = 0;
+	};
+	0439A6C30F1DC1C3000825AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 0439A6460F1DB233000825AC /* ColorToGray.cpp */;
+		name = "ColorToGray.cpp: 58";
+		rLen = 0;
+		rLoc = 1570;
+		rType = 0;
+		vrLen = 1800;
+		vrLoc = 954;
+	};
+	0439A6C40F1DC1C3000825AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 0439A6460F1DB233000825AC /* ColorToGray.cpp */;
+		name = "ColorToGray.cpp: 58";
+		rLen = 0;
+		rLoc = 1570;
+		rType = 0;
+		vrLen = 1800;
+		vrLoc = 954;
+	};
+	0439A6C50F1DC1C3000825AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 0439A6C60F1DC1C3000825AC /* inifile.h */;
+		name = "inifile.h: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 618;
+		vrLoc = 0;
+	};
+	0439A6C60F1DC1C3000825AC /* inifile.h */ = {
+		isa = PBXFileReference;
+		name = inifile.h;
+		path = /Users/mac/Desktop/inifile/inifile.h;
+		sourceTree = "<absolute>";
+	};
+	0439A6C70F1DC1C3000825AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 0439A6C80F1DC1C3000825AC /* inifile.c */;
+		name = "inifile.c: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 947;
+		vrLoc = 5719;
+	};
+	0439A6C80F1DC1C3000825AC /* inifile.c */ = {
+		isa = PBXFileReference;
+		name = inifile.c;
+		path = /Users/mac/Desktop/inifile/inifile.c;
+		sourceTree = "<absolute>";
+	};
+	0439A6C90F1DC1C3000825AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 0439A63D0F1DB225000825AC /* hColor32.h */;
+		name = "hColor32.h: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 1673;
+		vrLoc = 0;
+	};
+	0439A6DE0F1DC41A000825AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 0439A6460F1DB233000825AC /* ColorToGray.cpp */;
+		name = "ColorToGray.cpp: 376";
+		rLen = 0;
+		rLoc = 13939;
+		rType = 0;
+		vrLen = 1667;
+		vrLoc = 13176;
+	};
+	08FB7793FE84155DC02AAC07 /* Project object */ = {
+		activeBuildConfigurationName = Release;
+		activeExecutable = 0439A6290F1DB1A0000825AC /* ColorToGray */;
+		activeTarget = 8DD76F620486A84900D96B5E /* ColorToGray */;
+		addToTargets = (
+			8DD76F620486A84900D96B5E /* ColorToGray */,
+		);
+		breakpoints = (
+			0439A6630F1DB4BF000825AC /* hStream.cpp:13 */,
+		);
+		codeSenseManager = 0439A62D0F1DB1C2000825AC /* Code sense */;
+		executables = (
+			0439A6290F1DB1A0000825AC /* ColorToGray */,
+		);
+		perUserDictionary = {
+			PBXConfiguration.PBXFileTableDataSource3.PBXFileTableDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					1233,
+					20,
+					48,
+					43,
+					43,
+					20,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+					PBXFileDataSource_Target_ColumnID,
+				);
+			};
+			PBXPerProjectTemplateStateSaveDate = 253604367;
+			PBXWorkspaceStateSaveDate = 253604367;
+		};
+		perUserProjectItems = {
+			0439A6760F1DB56A000825AC /* PBXTextBookmark */ = 0439A6760F1DB56A000825AC /* PBXTextBookmark */;
+			0439A6860F1DB7F2000825AC /* PBXTextBookmark */ = 0439A6860F1DB7F2000825AC /* PBXTextBookmark */;
+			0439A6BE0F1DC1C3000825AC /* PBXTextBookmark */ = 0439A6BE0F1DC1C3000825AC /* PBXTextBookmark */;
+			0439A6C00F1DC1C3000825AC /* PBXTextBookmark */ = 0439A6C00F1DC1C3000825AC /* PBXTextBookmark */;
+			0439A6C20F1DC1C3000825AC /* PBXTextBookmark */ = 0439A6C20F1DC1C3000825AC /* PBXTextBookmark */;
+			0439A6C30F1DC1C3000825AC /* PBXTextBookmark */ = 0439A6C30F1DC1C3000825AC /* PBXTextBookmark */;
+			0439A6C40F1DC1C3000825AC /* PBXTextBookmark */ = 0439A6C40F1DC1C3000825AC /* PBXTextBookmark */;
+			0439A6C50F1DC1C3000825AC /* PBXTextBookmark */ = 0439A6C50F1DC1C3000825AC /* PBXTextBookmark */;
+			0439A6C70F1DC1C3000825AC /* PBXTextBookmark */ = 0439A6C70F1DC1C3000825AC /* PBXTextBookmark */;
+			0439A6C90F1DC1C3000825AC /* PBXTextBookmark */ = 0439A6C90F1DC1C3000825AC /* PBXTextBookmark */;
+			0439A6DE0F1DC41A000825AC /* PBXTextBookmark */ = 0439A6DE0F1DC41A000825AC /* PBXTextBookmark */;
+		};
+		sourceControlManager = 0439A62C0F1DB1C2000825AC /* Source Control */;
+		userBuildSettings = {
+		};
+	};
+	8DD76F620486A84900D96B5E /* ColorToGray */ = {
+		activeExec = 0;
+		executables = (
+			0439A6290F1DB1A0000825AC /* ColorToGray */,
+		);
+	};
+}

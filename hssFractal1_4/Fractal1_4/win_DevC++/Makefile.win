@@ -1,0 +1,39 @@
+# Project: Fractal1_4
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = 
+OBJ  = ./build/Fractal1_4.o ./build/hBmpFile.o ./build/hPixels32.o ./build/hStream.o $(RES)
+LINKOBJ  = ./build/Fractal1_4.o ./build/hBmpFile.o ./build/hPixels32.o ./build/hStream.o $(RES)
+LIBS =   -march=pentium4 
+INCS = 
+CXXINCS = 
+BIN  = ../Fractal1_4_DevC++.exe
+CXXFLAGS = $(CXXINCS)   -fexpensive-optimizations -O3 -march=pentium4
+CFLAGS = $(INCS)   -fexpensive-optimizations -O3 -march=pentium4
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before ../Fractal1_4_DevC++.exe all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CPP) $(LINKOBJ) -o "..\Fractal1_4_DevC++.exe" $(LIBS)
+
+./build/Fractal1_4.o: ../Fractal1_4.cpp
+	$(CPP) -c ../Fractal1_4.cpp -o ./build/Fractal1_4.o $(CXXFLAGS)
+
+./build/hBmpFile.o: ../../hGraphic32/hBmpFile.cpp
+	$(CPP) -c ../../hGraphic32/hBmpFile.cpp -o ./build/hBmpFile.o $(CXXFLAGS)
+
+./build/hPixels32.o: ../../hGraphic32/hPixels32.cpp
+	$(CPP) -c ../../hGraphic32/hPixels32.cpp -o ./build/hPixels32.o $(CXXFLAGS)
+
+./build/hStream.o: ../../hGraphic32/hStream.cpp
+	$(CPP) -c ../../hGraphic32/hStream.cpp -o ./build/hStream.o $(CXXFLAGS)
