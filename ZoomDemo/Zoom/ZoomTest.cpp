@@ -2952,6 +2952,11 @@ int main()
 #ifdef MMX_ACTIVE
 #ifdef asm   
       test("PicZoom_ThreeOrder_MMX"         ,PicZoom_ThreeOrder_MMX         , 80,true);//  33.44 FPS
+      
+      test("PicZoom_ftBilinearTable_SSE2"   ,PicZoom_ftBilinearTable_SSE2   ,1000,true);
+      test("PicZoom_ftBilinearTable_MMX"   ,PicZoom_ftBilinearTable_MMX   ,700,true);
+      test("PicZoom_ThreeOrderTable_SSE2"   ,PicZoom_ThreeOrderTable_SSE2   , 150,true);
+      test("PicZoom_ThreeOrderTable_MMX"   ,PicZoom_ThreeOrderTable_MMX   , 100,true);
 #endif
 #endif
       //*/
