@@ -4,6 +4,7 @@
 #include <math.h>
 #include <iostream>
 #include <time.h>
+#include <vector>
 //(  警告:代码移植到其他体系的CPU时需要重新考虑字节顺序的大端小端问题! )
 
 #include "../hGraphic32/hGraphic32.h" //简易图像处理基础框架
@@ -64,11 +65,15 @@ void test(const char* proc_name,const TZoomProc fproc,const long csRunCount,bool
     TFileInputStream bmpInputStream("test1.bmp");
 #endif
     TBmpFile::load(&bmpInputStream,&srcPic);//加载源图片
+    //dstPic.resizeFast(srcPic.getWidth()*1.523,srcPic.getHeight()*1.523);
+    //TPixels32 tmpPic; tmpPic.resizeFast(srcPic.getWidth()*0.717,srcPic.getHeight()*0.717);
     dstPic.resizeFast(1024,768);
 
     std::cout<<proc_name<<": ";
     clock_t t0=clock();
     for (long c=0;c<csRunCount;++c){
+        //fproc(tmpPic.getRef(),srcPic.getRef());
+        //fproc(dstPic.getRef(),tmpPic.getRef());
         fproc(dstPic.getRef(),srcPic.getRef());
     }
     t0=clock()-t0;
@@ -1560,7 +1565,7 @@ void PicZoom_ftBilinear_MMX_expand2(const TPixels32Ref& Dst,const TPixels32Ref& 
 
               PSRLw        XMM0,8
               PSRLw        XMM1,8
-              PSUBw        XMM0,MM1
+              PSUBw        XMM0,XMM1
               PSLLw        XMM1,8
               PMULlw       XMM0,XMM6
               PADDw        XMM0,XMM1
@@ -1614,7 +1619,7 @@ void PicZoom_ftBilinear_MMX_expand2(const TPixels32Ref& Dst,const TPixels32Ref& 
 
               PSRLw        XMM0,8
               PSRLw        XMM1,8
-              PSUBw        XMM0,MM1
+              PSUBw        XMM0,XMM1
               PSLLw        XMM1,8
               PMULlw       XMM0,XMM6
               PADDw        XMM0,XMM1
@@ -1671,13 +1676,13 @@ void PicZoom_ftBilinear_SSE2(const TPixels32Ref& Dst,const TPixels32Ref& Src)
 
               lea       edi,[edi+ebx*4]
               neg       ebx
-
         loop2_start:
               call ftBilinear_SSE2_expand2
               lea       edx,[edx+ebp*2]
               add       ebx,2
 
               jnz       loop2_start
+
 
         end_loop2:
             pop    ebx
@@ -1687,7 +1692,12 @@ void PicZoom_ftBilinear_SSE2(const TPixels32Ref& Dst,const TPixels32Ref& Src)
 
               lea       edi,[edi+ebx*4]
               neg       ebx
-              call Bilinear_Fast_MMX_expand1
+        loop1_start:
+              call ftBilinear_SSE2
+              lea       edx,[edx+ebp]
+              add       ebx,1
+
+              jnz       loop1_start
         end_write:
 
               pop       ebp
@@ -2070,7 +2080,6 @@ void PicZoom_ThreeOrder_Common(const TPixels32Ref& Dst,const TPixels32Ref& Src)
     };
     static _CAutoInti_SinXDivX_Table_MMX __tmp_CAutoInti_SinXDivX_Table_MMX;
 
-
     void __declspec(naked) _private_ThreeOrder_Fast_MMX()
     {
         asm
@@ -2156,7 +2165,6 @@ void PicZoom_ThreeOrder_Common(const TPixels32Ref& Dst,const TPixels32Ref& Src)
             //emms
         }
     }
-
     void ThreeOrder_Border_MMX(const TPixels32Ref& pic,const long x_16,const long y_16,Color32* result)
     {
         unsigned long x0_sub1=(x_16>>16)-1;
@@ -2256,8 +2264,581 @@ void PicZoom_ThreeOrder_MMX(const TPixels32Ref& Dst,const TPixels32Ref& Src)
     asm emms
 }
 
+
+//=============================================================================================================
+    
+    typedef UInt64 TMMXData64;
+
+    //ftBilinearTable_MMX(out [edi+ebx*4]; mm5=v,mm6=vr,mm7=0,[ebp]=(u,ur),[edx]=srx_x,esi=PSrcLineColor,ecx=PSrcLineColorNext)
+    //void __declspec(naked) ftBilinearTable_MMX(){
+    #define  ftBilinearTable_MMX()	                    \
+        asm mov         eax,[edx+ebx]                   \
+        asm movd        mm0,dword ptr[esi+eax*4]        \
+        asm movd        mm1,dword ptr[esi+eax*4+4]      \
+        asm movd        mm2,dword ptr[ecx+eax*4]        \
+        asm movd        mm3,dword ptr[ecx+eax*4+4]      \
+        asm punpcklbw   mm0,mm7                         \
+        asm punpcklbw   mm1,mm7                         \
+        asm punpcklbw   mm2,mm7                         \
+        asm punpcklbw   mm3,mm7                         \
+        asm pmullw      mm0,mm5                         \
+        asm pmullw      mm1,mm5                         \
+        asm pmullw      mm2,mm6                         \
+        asm pmullw      mm3,mm6                         \
+        asm paddw       mm0,mm2                         \
+        asm paddw       mm1,mm3                         \
+        asm pmulhw      mm0,qword ptr [ebp+ebx*4]	    \
+        asm pmulhw      mm1,qword ptr [ebp+ebx*4+8]     \
+        asm paddw       mm0,mm1                         \
+        asm packuswb    mm0,mm7                         \
+        asm movd  dword ptr  [edi+ebx],mm0             
+        //ret //for  __declspec(naked)
+        //}
+    //}
+    
+void PicZoom_ftBilinearTable_MMX(const TPixels32Ref& Dst,const TPixels32Ref& Src)
+{
+    if (  (0==Dst.width)||(0==Dst.height)
+        ||(2>Src.width)||(2>Src.height)) return;
+
+    long xrIntFloat_16=((Src.width-1)<<16)/Dst.width; 
+    long yrIntFloat_16=((Src.height-1)<<16)/Dst.height;
+
+    long dst_width=Dst.width;
+    UInt8* _bufMem=new UInt8[(dst_width*2*sizeof(TMMXData64)+15)+dst_width*sizeof(Int32)];
+    TMMXData64* uList=(TMMXData64*)((((ptrdiff_t)_bufMem)+15)>>4<<4); //16byte对齐 
+    Int32* xList=(Int32*)(uList+dst_width*2);
+    {//init u table
+        long srcx_16=0;
+        for (long x=0;x<dst_width*2;x+=2){
+            xList[x>>1]=(srcx_16>>16);
+            unsigned long u=(srcx_16>>8)&0xFF;
+            unsigned long ur=(256-u)<<1;
+            u=u<<1;
+            uList[x+0]=(ur|(ur<<16));
+            uList[x+0]|=uList[x+0]<<32;
+            uList[x+1]=u|(u<<16);
+            uList[x+1]|=uList[x+1]<<32;
+            srcx_16+=xrIntFloat_16;
+        }
+    }
+
+    Color32* pDstLine=Dst.pdata;
+    long srcy_16=0;
+    asm pxor mm7,mm7 //mm7=0
+    for (long y=0;y<Dst.height;++y){
+        unsigned long v=(srcy_16>>8) & 0xFF;
+        unsigned long vr=(256-v)>>1;
+        v>>=1;
+        Color32* PSrcLineColor= (Color32*)((UInt8*)(Src.pdata)+Src.byte_width*(srcy_16>>16)) ;
+        Color32* PSrcLineColorNext= (Color32*)((UInt8*)(PSrcLineColor)+Src.byte_width) ;
+        asm{
+              movd        mm5,vr
+              movd        mm6,v
+              punpcklwd   mm5,mm5
+              punpcklwd   mm6,mm6
+              punpckldq   mm5,mm5
+              punpckldq   mm6,mm6
+            
+              mov       esi,PSrcLineColor
+              mov       ecx,PSrcLineColorNext
+              mov       edx,xList //x
+              mov       ebx,dst_width
+              mov       edi,pDstLine
+              push      ebp
+              mov       ebp,uList
+                
+            test   ebx,ebx
+            jle    end_write
+
+              lea       ebx,[ebx*4]
+              lea       edi,[edi+ebx]
+              lea       edx,[edx+ebx]
+              lea       ebp,[ebp+ebx*4]
+              neg       ebx
+        loop1_start:
+              //call ftBilinearTable_MMX
+              ftBilinearTable_MMX()
+              add       ebx,4
+
+              jnz       loop1_start
+        end_write:
+
+              pop       ebp
+        }
+        srcy_16+=yrIntFloat_16;
+        ((UInt8*&)pDstLine)+=Dst.byte_width;
+    }
+    delete []_bufMem;
+    asm emms
+}
+
+
+    //ftBilinearTable_SSE2(out [edi+ebx*4]; xmm5=v,xmm6=vr,xmm7=0,[ebp]=(u,ur),[edx]=srx_x,esi=PSrcLineColor,ecx=PSrcLineColorNext)
+    //void __declspec(naked) ftBilinearTable_SSE2(){
+    #define  ftBilinearTable_SSE2()	                    \
+        asm mov         eax,[edx+ebx]                   \
+        asm movq        xmm0,qword ptr[esi+eax*4]       \
+        asm movq        xmm1,qword ptr[ecx+eax*4]       \
+        asm punpcklbw   xmm0,xmm7                       \
+        asm punpcklbw   xmm1,xmm7                       \
+        asm pmullw      xmm0,xmm5                       \
+        asm pmullw      xmm1,xmm6                       \
+        asm paddw       xmm0,xmm1                       \
+        asm pmulhw      xmm0,xmmword ptr [ebp+ebx*4]	\
+        asm movdqa      xmm1,xmm0                       \
+        asm punpckhqdq  xmm0,xmm0                       \
+        asm paddw       xmm0,xmm1                       \
+        asm packuswb    xmm0,xmm7                       \
+        asm movd  dword ptr  [edi+ebx],xmm0             
+        //ret //for  __declspec(naked)
+        //}
+    //}
+
+    //void __declspec(naked) ftBilinearTable_SSE2_expand2(){
+    #define  ftBilinearTable_SSE2_expand2()	            \
+        asm mov         eax,[edx+ebx]                   \
+        asm movq        xmm0,qword ptr[esi+eax*4]       \
+        asm movq        xmm1,qword ptr[ecx+eax*4]       \
+        asm mov         eax,[edx+ebx+4]                 \
+        asm movq        xmm2,qword ptr[esi+eax*4]       \
+        asm movq        xmm3,qword ptr[ecx+eax*4]       \
+        asm punpcklbw   xmm0,xmm7                       \
+        asm punpcklbw   xmm1,xmm7                       \
+        asm punpcklbw   xmm2,xmm7                       \
+        asm punpcklbw   xmm3,xmm7                       \
+        asm pmullw      xmm0,xmm5                       \
+        asm pmullw      xmm1,xmm6                       \
+        asm pmullw      xmm2,xmm5                       \
+        asm pmullw      xmm3,xmm6                       \
+        asm paddw       xmm0,xmm1                       \
+        asm paddw       xmm2,xmm3                       \
+        asm pmulhw      xmm0,xmmword ptr [ebp+ebx*4]	\
+        asm pmulhw      xmm2,xmmword ptr [ebp+ebx*4+16] \
+        asm movdqa      xmm1,xmm0                       \
+        asm punpcklqdq  xmm0,xmm2                       \
+        asm punpckhqdq  xmm1,xmm2                       \
+        asm paddw       xmm0,xmm1                       \
+        asm packuswb    xmm0,xmm7                       \
+        asm movq  qword ptr  [edi+ebx],xmm0             \
+        //ret //for  __declspec(naked)
+        //}
+    //}
+
+    
+void PicZoom_ftBilinearTable_SSE2(const TPixels32Ref& Dst,const TPixels32Ref& Src)
+{
+    if (  (0==Dst.width)||(0==Dst.height)
+        ||(2>Src.width)||(2>Src.height)) return;
+
+    long xrIntFloat_16=((Src.width-1)<<16)/Dst.width; 
+    long yrIntFloat_16=((Src.height-1)<<16)/Dst.height;
+
+    long dst_width=Dst.width;
+    UInt8* _bufMem=new UInt8[(dst_width*2*sizeof(TMMXData64)+15)+dst_width*sizeof(Int32)];
+    TMMXData64* uList=(TMMXData64*)((((ptrdiff_t)_bufMem)+15)>>4<<4); //16byte对齐 
+    Int32* xList=(Int32*)(uList+dst_width*2);
+    {//init u table
+        long srcx_16=0;
+        for (long x=0;x<dst_width*2;x+=2){
+            xList[x>>1]=(srcx_16>>16);
+            unsigned long u=(srcx_16>>8)&0xFF;
+            unsigned long ur=(256-u)<<1;
+            u=u<<1;
+            uList[x+0]=(ur|(ur<<16));
+            uList[x+0]|=uList[x+0]<<32;
+            uList[x+1]=u|(u<<16);
+            uList[x+1]|=uList[x+1]<<32;
+            srcx_16+=xrIntFloat_16;
+        }
+    }
+
+    Color32* pDstLine=Dst.pdata;
+    long srcy_16=0;
+    asm pxor  xmm7,xmm7 //xmm7=0
+    for (long y=0;y<Dst.height;++y){
+        unsigned long v=(srcy_16>>8) & 0xFF;
+        unsigned long vr=(256-v)>>1;
+        v>>=1;
+        Color32* PSrcLineColor= (Color32*)((UInt8*)(Src.pdata)+Src.byte_width*(srcy_16>>16)) ;
+        Color32* PSrcLineColorNext= (Color32*)((UInt8*)(PSrcLineColor)+Src.byte_width) ;
+        asm{
+              movd        xmm5,vr
+              movd        xmm6,v
+              punpcklwd   xmm5,xmm5
+              punpcklwd   xmm6,xmm6
+              punpckldq   xmm5,xmm5
+              punpckldq   xmm6,xmm6
+              punpcklqdq  xmm5,xmm5
+              punpcklqdq  xmm6,xmm6
+            
+              mov       esi,PSrcLineColor
+              mov       ecx,PSrcLineColorNext
+              mov       edx,xList //x
+              mov       ebx,dst_width
+              mov       edi,pDstLine
+              push      ebp
+              mov       ebp,uList
+              
+              push      ebx
+              and       ebx,(not 1)
+              test      ebx,ebx
+              jle     end_loop2
+
+
+              lea       ebx,[ebx*4]
+              lea       edi,[edi+ebx]
+              lea       edx,[edx+ebx]
+              lea       ebp,[ebp+ebx*4]
+              neg       ebx
+        loop2_start:
+              //call ftBilinearTable_SSE2_expand2
+              ftBilinearTable_SSE2_expand2()
+              add       ebx,8
+
+              jnz       loop2_start
+
+        end_loop2:
+            pop    ebx
+            and    ebx,1  
+            test   ebx,ebx
+            jle    end_write
+
+              lea       ebx,[ebx*4]
+              lea       edi,[edi+ebx]
+              lea       edx,[edx+ebx]
+              lea       ebp,[ebp+ebx*4]
+              neg       ebx
+        loop1_start:
+              //call ftBilinearTable_SSE2
+              ftBilinearTable_SSE2()
+              add       ebx,4
+
+              jnz       loop1_start
+        end_write:
+
+              pop       ebp
+        }
+        srcy_16+=yrIntFloat_16;
+        ((UInt8*&)pDstLine)+=Dst.byte_width;
+    }
+    delete []_bufMem;
+}
+
+    static TMMXData64 SinXDivX_Table64_MMX[(2<<8)+1];
+    class _CAutoInti_SinXDivX_Table64_MMX {
+    private: 
+        void _Inti_SinXDivX_Table64_MMX()
+        {
+            for (long i=0;i<=(2<<8);++i)
+            {
+                unsigned short t=(unsigned short)(0.5+(1<<14)*SinXDivX(i*(1.0/(256))));
+                unsigned long tl=t|(((unsigned long)t)<<16);
+                TMMXData64 tll=tl|(((TMMXData64)tl)<<32);
+                SinXDivX_Table64_MMX[i]=tll;
+            }
+        };
+    public:
+        _CAutoInti_SinXDivX_Table64_MMX() { _Inti_SinXDivX_Table64_MMX(); }
+    };
+    static _CAutoInti_SinXDivX_Table64_MMX __tmp_CAutoInti_SinXDivX_Table64_MMX;
+
+
+    must_inline void _private_ThreeOrderTable_Fast_MMX(){
+        asm{
+            movd        mm0,dword ptr [eax]
+            movd        mm1,dword ptr [eax+4]
+            movd        mm2,dword ptr [eax+8]
+            movd        mm3,dword ptr [eax+12]
+            punpcklbw   mm0,mm7
+            punpcklbw   mm1,mm7
+            punpcklbw   mm2,mm7
+            punpcklbw   mm3,mm7
+            psllw       mm0,7
+            psllw       mm1,7
+            psllw       mm2,7
+            psllw       mm3,7
+            pmulhw      mm0,qword ptr [ecx]
+            pmulhw      mm1,qword ptr [ecx+8]
+            pmulhw      mm2,qword ptr [ecx+16]
+            pmulhw      mm3,qword ptr [ecx+24]
+            paddsw      mm0,mm1
+            paddsw      mm2,mm3
+            paddsw      mm0,mm2
+            pmulhw      mm0,qword ptr [ebx] //v
+        }
+    }
+
+    must_inline UInt32 ThreeOrderTable_Fast_MMX(const Color32* pixel,long byte_width,const TMMXData64* v4,const TMMXData64* u4){
+        asm {
+            mov     eax,pixel
+            mov     edx,byte_width
+            mov     ecx,u4
+            mov     ebx,v4
+        }
+        //asm call _private_ThreeOrderTable_Fast_MMX
+        _private_ThreeOrderTable_Fast_MMX();
+        asm{
+            movq        mm6,mm0
+            lea     eax,[eax+edx]  //+pic.byte_width
+            lea     ebx,[ebx+8]
+        }
+        //asm call _private_ThreeOrderTable_Fast_MMX
+        _private_ThreeOrderTable_Fast_MMX();
+        asm{
+            paddsw      mm6,mm0
+            lea     eax,[eax+edx]  //+pic.byte_width
+            lea     ebx,[ebx+8]
+        }
+        //asm call _private_ThreeOrderTable_Fast_MMX
+        _private_ThreeOrderTable_Fast_MMX();
+        asm{
+            paddsw      mm6,mm0
+            lea     eax,[eax+edx]  //+pic.byte_width
+            lea    ebx,[ebx+8]
+        }
+        //asm call _private_ThreeOrderTable_Fast_MMX
+        _private_ThreeOrderTable_Fast_MMX();
+        asm{
+            paddsw      mm6,mm0
+            psraw       mm6,3
+            packuswb    mm6,mm7
+            movd        eax,mm6
+            //emms
+        }
+    }
+    UInt32 ThreeOrderTable_Border_MMX(const TPixels32Ref& pic,const long x0_sub1,const long y0_sub1,const TMMXData64* v4,const TMMXData64* u4){
+        Color32 pixel[16];
+        Color32* px=&pixel[0];
+        for (long i=0;i<4;++i,px+=4){
+            long y=y0_sub1+i;
+            px[0]=pic.getPixelsBorder(x0_sub1  ,y);
+            px[1]=pic.getPixelsBorder(x0_sub1+1,y);
+            px[2]=pic.getPixelsBorder(x0_sub1+2,y);
+            px[3]=pic.getPixelsBorder(x0_sub1+3,y);
+        }
+        return ThreeOrderTable_Fast_MMX(&pixel[0],4*sizeof(Color32),v4,u4);
+    }
+
+void PicZoom_ThreeOrderTable_MMX(const TPixels32Ref& Dst,const TPixels32Ref& Src)
+{
+    if (  (0==Dst.width)||(0==Dst.height)
+        ||(0==Src.width)||(0==Src.height)) return;
+
+    long dst_width=Dst.width;
+    long dst_height=Dst.height;
+    long xrIntFloat_16=((Src.width)<<16)/dst_width+1; 
+    long yrIntFloat_16=((Src.height)<<16)/dst_height+1;
+    const long csDErrorX=-(1<<15)+(xrIntFloat_16>>1);
+    const long csDErrorY=-(1<<15)+(yrIntFloat_16>>1);
+
+
+    //计算出需要特殊处理的边界
+    long border_y0=((1<<16)-csDErrorY)/yrIntFloat_16+1;//y0+y*yr>=1; y0=csDErrorY => y>=(1-csDErrorY)/yr
+    if (border_y0>=dst_height) border_y0=dst_height;
+    long border_x0=((1<<16)-csDErrorX)/xrIntFloat_16+1;
+    if (border_x0>=dst_width ) border_x0=dst_width;
+    long border_y1=(((Src.height-3)<<16)-csDErrorY)/yrIntFloat_16+1; //y0+y*yr<=(height-3) => y<=(height-3-csDErrorY)/yr
+    if (border_y1<border_y0) border_y1=border_y0;
+    long border_x1=(((Src.width-3)<<16)-csDErrorX)/xrIntFloat_16+1;; 
+    if (border_x1<border_x0) border_x1=border_x0;
+
+    asm pxor    mm7,mm7 
+    std::vector<TMMXData64> _uList(dst_width*4); TMMXData64* uList=&_uList[0];
+    std::vector<long> _xList(dst_width); long* xList=&_xList[0];
+    {//uList
+        long srcx_16=csDErrorX;
+        for (long x=0;x<dst_width*4;x+=4){
+            xList[x>>2]=(srcx_16>>16)-1;
+            long u=(srcx_16>>8)&0xFF;
+            uList[x+0]=SinXDivX_Table64_MMX[256+u];
+            uList[x+1]=SinXDivX_Table64_MMX[u];
+            uList[x+2]=SinXDivX_Table64_MMX[256-u];
+            uList[x+3]=SinXDivX_Table64_MMX[512-u];
+            srcx_16+=xrIntFloat_16;
+        }        
+    }
+    Color32* pDstLine=Dst.pdata;
+    long srcy_16=csDErrorY;
+    for (long y=0;y<dst_height;++y){
+        const long srcy_sub1=(srcy_16>>16)-1;
+        const long v=(srcy_16>>8)&0xFF;
+        TMMXData64 v4[4];
+        v4[0]=SinXDivX_Table64_MMX[256+v];
+        v4[1]=SinXDivX_Table64_MMX[v];
+        v4[2]=SinXDivX_Table64_MMX[256-v];
+        v4[3]=SinXDivX_Table64_MMX[512-v];
+        long srcx_16=csDErrorX;
+        if ((y<border_y0)||(y>=border_y1)){
+            for (long x=0;x<dst_width;++x)
+                pDstLine[x].argb=ThreeOrderTable_Border_MMX(Src,xList[x],srcy_sub1,&v4[0],&uList[x*4]); //border
+        }else{
+            long x;
+            for (x=0;x<border_x0;++x)
+                pDstLine[x].argb=ThreeOrderTable_Border_MMX(Src,xList[x],srcy_sub1,&v4[0],&uList[x*4]);//border
+            const Color32* pixelLine=Src.getLinePixels(srcy_sub1);
+            long byte_width=Src.byte_width;
+            for (x=border_x0;x<border_x1;++x)
+                pDstLine[x].argb=ThreeOrderTable_Fast_MMX(&pixelLine[xList[x]],byte_width,&v4[0],&uList[x*4]);//fast MMX !
+            for (x=border_x1;x<dst_width;++x)
+                pDstLine[x].argb=ThreeOrderTable_Border_MMX(Src,xList[x],srcy_sub1,&v4[0],&uList[x*4]);//border
+        }
+        srcy_16+=yrIntFloat_16;
+        ((UInt8*&)pDstLine)+=Dst.byte_width;
+    }
+    asm emms
+}
+
+    //void __declspec(naked)  _private_ThreeOrderTable_Fast_SSE2_2(){
+    #define  _private_ThreeOrderTable_Fast_SSE2_2()	\
+        asm movq        xmm0,qword ptr [eax]        \
+        asm movq        xmm1,qword ptr [eax+8]      \
+        asm movq        xmm2,qword ptr [eax+edx]	\
+        asm movq        xmm3,qword ptr [eax+edx+8]	\
+        asm punpcklbw   xmm0,xmm7					\
+        asm punpcklbw   xmm1,xmm7					\
+        asm punpcklbw   xmm2,xmm7					\
+        asm punpcklbw   xmm3,xmm7					\
+        asm psllw       xmm0,7						\
+        asm psllw       xmm1,7						\
+        asm psllw       xmm2,7						\
+        asm psllw       xmm3,7						\
+        asm pmulhw      xmm0,xmmword ptr [ecx]		\
+        asm pmulhw      xmm1,xmmword ptr [ecx+16]	\
+        asm pmulhw      xmm2,xmmword ptr [ecx]		\
+        asm pmulhw      xmm3,xmmword ptr [ecx+16]	\
+        asm paddsw      xmm0,xmm1					\
+        asm paddsw      xmm2,xmm3					\
+        asm pmulhw      xmm0,xmmword ptr [ebx]		\
+        asm pmulhw      xmm2,xmmword ptr [ebx+16]	\
+        asm paddsw      xmm0,xmm2					\
+        //asm ret //for __declspec(naked)
+    //}
+
+    must_inline UInt32 ThreeOrderTable_Fast_SSE2(const Color32* pixel,long byte_width,const TMMXData64* v4,const TMMXData64* u4){
+        asm mov     eax,pixel
+        asm mov     edx,byte_width
+        asm mov     ebx,v4
+        asm mov     ecx,u4
+        //asm call _private_ThreeOrderTable_Fast_SSE2_2
+        _private_ThreeOrderTable_Fast_SSE2_2();
+        asm movdqa  xmm6,xmm0
+        asm lea     eax,[eax+edx*2]  //+pic.byte_width
+        asm lea     ebx,[ebx+32]
+        //asm call _private_ThreeOrderTable_Fast_SSE2_2
+        _private_ThreeOrderTable_Fast_SSE2_2();
+        asm paddsw      xmm6,xmm0
+
+        asm movdqa      xmm5,xmm6
+        asm psrldq      xmm6,8   //srl 8*8 bit!
+        asm paddsw      xmm5,xmm6
+        asm psraw       xmm5,3
+        asm packuswb    xmm5,xmm7
+        asm movd        eax,xmm5
+    }
+    must_inline long getSizeBorder(long x,long maxx){
+		if (x<=0)
+			return 0;
+		else if (x>=maxx)
+			return maxx;
+		else
+			return x;
+    }
+
+    must_inline UInt32 ThreeOrderTable_Border_SSE2(const TPixels32Ref& pic,const long x0_sub1,const long y0_sub1,const TMMXData64* v4,const TMMXData64* u4){
+        Color32 pixel[16];
+        long height_sub_1=pic.height-1;
+        long width_sub_1=pic.width-1;
+        Color32* pbuf=pixel;
+        for (long i=0;i<4;++i,pbuf+=4){
+            long y=getSizeBorder(y0_sub1+i,height_sub_1);
+            Color32* pLine=pic.getLinePixels(y);
+            pbuf[0]=pLine[getSizeBorder(x0_sub1+0,width_sub_1)];
+            pbuf[1]=pLine[getSizeBorder(x0_sub1+1,width_sub_1)];
+            pbuf[2]=pLine[getSizeBorder(x0_sub1+2,width_sub_1)];
+            pbuf[3]=pLine[getSizeBorder(x0_sub1+3,width_sub_1)];
+        }
+        return ThreeOrderTable_Fast_SSE2(pixel,4*sizeof(Color32),v4,u4);
+    }
+
+void PicZoom_ThreeOrderTable_SSE2(const TPixels32Ref& Dst,const TPixels32Ref& Src)
+{
+    if (  (0==Dst.width)||(0==Dst.height)
+        ||(0==Src.width)||(0==Src.height)) return;
+
+    long dst_width=Dst.width;
+    long dst_height=Dst.height;
+    long xrIntFloat_16=((Src.width)<<16)/dst_width+1; 
+    long yrIntFloat_16=((Src.height)<<16)/dst_height+1;
+    const long csDErrorX=-(1<<15)+(xrIntFloat_16>>1);
+    const long csDErrorY=-(1<<15)+(yrIntFloat_16>>1);
+
+    //计算出需要特殊处理的边界
+    long border_y0=((1<<16)-csDErrorY)/yrIntFloat_16+1;//y0+y*yr>=1; y0=csDErrorY => y>=(1-csDErrorY)/yr
+    if (border_y0>=dst_height) border_y0=dst_height;
+    long border_x0=((1<<16)-csDErrorX)/xrIntFloat_16+1;
+    if (border_x0>=dst_width ) border_x0=dst_width;
+    long border_y1=(((Src.height-3)<<16)-csDErrorY)/yrIntFloat_16+1; //y0+y*yr<=(height-3) => y<=(height-3-csDErrorY)/yr
+    if (border_y1<border_y0) border_y1=border_y0;
+    long border_x1=(((Src.width-3)<<16)-csDErrorX)/xrIntFloat_16+1;; 
+    if (border_x1<border_x0) border_x1=border_x0;
+
+    UInt8* _bufMem=new UInt8[(dst_width*4*sizeof(TMMXData64)+15)+dst_width*sizeof(Int32)];
+    TMMXData64* uList=(TMMXData64*)((((ptrdiff_t)_bufMem)+15)>>4<<4); //16byte对齐 
+    Int32* xList=(Int32*)(uList+dst_width*4);
+    {//init u table
+        long srcx_16=csDErrorX;
+        for (long x=0;x<dst_width*4;x+=4){
+            xList[x>>2]=(srcx_16>>16)-1;
+            long u=(srcx_16>>8)&0xFF;
+            uList[x+0]=SinXDivX_Table64_MMX[256+u];
+            uList[x+1]=SinXDivX_Table64_MMX[u];
+            uList[x+2]=SinXDivX_Table64_MMX[256-u];
+            uList[x+3]=SinXDivX_Table64_MMX[512-u];
+            srcx_16+=xrIntFloat_16;
+        }
+    }
+    TMMXData64 _v4[8+2]; 
+    TMMXData64* v4=(&_v4[0]); v4=(TMMXData64*)( (((ptrdiff_t)v4)+15)>>4<<4);
+    asm pxor    xmm7,xmm7 
+
+    Color32* pDstLine=Dst.pdata;
+    long srcy_16=csDErrorY;
+    for (long y=0;y<dst_height;++y){
+        //v table
+        const long srcy_sub1=(srcy_16>>16)-1;
+        const long v=(srcy_16>>8)&0xFF;
+        v4[0]=SinXDivX_Table64_MMX[256+v];
+        v4[1]=v4[0];
+        v4[2]=SinXDivX_Table64_MMX[v];
+        v4[3]=v4[2];
+        v4[4]=SinXDivX_Table64_MMX[256-v];
+        v4[5]=v4[4];
+        v4[6]=SinXDivX_Table64_MMX[512-v];
+        v4[7]=v4[6];
+        if ((y<border_y0)||(y>=border_y1)){
+            for (long x=0;x<dst_width;++x)
+                pDstLine[x].argb=ThreeOrderTable_Border_SSE2(Src,xList[x],srcy_sub1,v4,&uList[x*4]); //border
+        }else{
+            for (long x=0;x<border_x0;++x)
+                pDstLine[x].argb=ThreeOrderTable_Border_SSE2(Src,xList[x],srcy_sub1,v4,&uList[x*4]);//border
+            const Color32* pixelLine=Src.getLinePixels(srcy_sub1);
+            long byte_width=Src.byte_width;
+            for (long x=border_x0;x<border_x1;++x)
+                pDstLine[x].argb=ThreeOrderTable_Fast_SSE2(&pixelLine[xList[x]],byte_width,v4,&uList[x*4]);//fast MMX !
+            for (long x=border_x1;x<dst_width;++x)
+                pDstLine[x].argb=ThreeOrderTable_Border_SSE2(Src,xList[x],srcy_sub1,v4,&uList[x*4]);//border
+        }
+        srcy_16+=yrIntFloat_16;
+        ((UInt8*&)pDstLine)+=Dst.byte_width;
+    }
+    delete []_bufMem;
+}
+
 #endif
 #endif
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  /*
@@ -2324,34 +2905,32 @@ TMipWeight SelectBestPicIndexEx(const TMipMap& mip,const long dstWidth,const lon
 int main()
 {
     std::cout<<" 请输入回车键开始测试(可以把进程优先级设置为“实时”)> ";
-    waitInputChar();
+    //waitInputChar();
     std::cout<<std::endl;
-                                                                                    //AMD64X2 4200+ 2.33G
+                                                                                          //AMD64X2 4200+ 2.33G
       //*
-      test("PicZoom0"                       ,PicZoom0                       , 40,true);//   19.25 FPS
-      test("PicZoom1"                       ,PicZoom1                       , 60,true);//   30.23 FPS
-      test("PicZoom2"                       ,PicZoom2                       ,400,true);//  188.24 FPS
-      test("PicZoom3"                       ,PicZoom3                       ,800,true);//  478.47 FPS
+      test("PicZoom0"                       ,PicZoom0                       , 100,true);//   19.25 FPS
+      test("PicZoom1"                       ,PicZoom1                       , 200,true);//   30.23 FPS
+      test("PicZoom2"                       ,PicZoom2                       , 400,true);//  188.24 FPS
+      test("PicZoom3"                       ,PicZoom3                       ,1500,true);//  478.47 FPS
 #ifdef asm   
-      test("PicZoom3_asm"                   ,PicZoom3_asm                   ,800,true);//  478.47 FPS
-      test("PicZoom3_float"                 ,PicZoom3_float                 ,600,true);//  290.98 FPS
+      test("PicZoom3_asm"                   ,PicZoom3_asm                   ,1500,true);//  478.47 FPS
+      test("PicZoom3_float"                 ,PicZoom3_float                 ,1500,true);//  290.98 FPS
 #endif
-      test("PicZoom3_Table"                 ,PicZoom3_Table                 ,800,true);//  449.19 FPS
-      test("PicZoom3_Table_OpMul"           ,PicZoom3_Table_OpMul           ,800,true);//  445.19 FPS
+      test("PicZoom3_Table"                 ,PicZoom3_Table                 ,1500,true);//  449.19 FPS
+      test("PicZoom3_Table_OpMul"           ,PicZoom3_Table_OpMul           ,1500,true);//  445.19 FPS
 #ifdef MMX_ACTIVE
 #ifdef asm   
-      test("PicZoom3_SSE"                   ,PicZoom3_SSE                   ,1500,true);// 780.44 FPS
-      test("PicZoom3_SSE_prefetch"          ,PicZoom3_SSE_prefetch          ,2000,true);//1084.60 FPS
+      test("PicZoom3_SSE"                   ,PicZoom3_SSE                   ,2500,true);// 780.44 FPS
+      test("PicZoom3_SSE_prefetch"          ,PicZoom3_SSE_prefetch          ,2500,true);//1084.60 FPS
 #endif
-      test("PicZoom3_SSE_mmh"               ,PicZoom3_SSE_mmh               ,1200,true);// 640.00 FPS
+      test("PicZoom3_SSE_mmh"               ,PicZoom3_SSE_mmh               ,2000,true);// 640.00 FPS
 #endif
-      //*/
       //-------------------------------------------------------------------------------------------
-      //*
-      test("PicZoom_Bilinear0"              ,PicZoom_Bilinear0              , 20,true);//   10.00 FPS
-      test("PicZoom_Bilinear1"              ,PicZoom_Bilinear1              , 60,true);//   30.98 FPS 
-      test("PicZoom_Bilinear2"              ,PicZoom_Bilinear2              ,100,true);//   56.12 FPS 
-      test("PicZoom_Bilinear_Common"        ,PicZoom_Bilinear_Common        ,150,true);//   75.60 FPS 
+      test("PicZoom_Bilinear0"              ,PicZoom_Bilinear0              , 40,true);//   10.00 FPS
+      test("PicZoom_Bilinear1"              ,PicZoom_Bilinear1              , 70,true);//   30.98 FPS 
+      test("PicZoom_Bilinear2"              ,PicZoom_Bilinear2              ,150,true);//   56.12 FPS 
+      test("PicZoom_Bilinear_Common"        ,PicZoom_Bilinear_Common        ,200,true);//   75.60 FPS 
 #ifdef MMX_ACTIVE
 #ifdef asm   
       test("PicZoom_Bilinear_MMX"           ,PicZoom_Bilinear_MMX           ,250,true);// 133.33 FPS 
@@ -2363,23 +2942,23 @@ int main()
 #ifdef asm   
       test("PicZoom_ftBilinear_MMX"         ,PicZoom_ftBilinear_MMX         ,300,true);//  156.09 FPS
       test("PicZoom_ftBilinear_MMX_expand2" ,PicZoom_ftBilinear_MMX_expand2 ,300,true);//  168.44 FPS
-      test("PicZoom_ftBilinear_SSE2"        ,PicZoom_ftBilinear_SSE2        ,300,true);//  148.88 FPS
+      test("PicZoom_ftBilinear_SSE2"        ,PicZoom_ftBilinear_SSE2        ,400,true);//  148.88 FPS
 #endif
-      test("PicZoom_ftBilinear_MMX_mmh"     ,PicZoom_ftBilinear_MMX_mmh     ,150,true);//   69.57 FPS
+      test("PicZoom_ftBilinear_MMX_mmh"     ,PicZoom_ftBilinear_MMX_mmh     ,200,true);//   69.57 FPS
 #endif
-      //*/
       //-------------------------------------------------------------------------------------------
-      //*
-      test("PicZoom_ThreeOrder0"            ,PicZoom_ThreeOrder0            ,  6,true);//   3.34 FPS
-      test("PicZoom_ThreeOrder_Common"      ,PicZoom_ThreeOrder_Common      , 35,true);//  16.71 FPS
+      test("PicZoom_ThreeOrder0"            ,PicZoom_ThreeOrder0            , 10,true);//   3.34 FPS
+      test("PicZoom_ThreeOrder_Common"      ,PicZoom_ThreeOrder_Common      , 40,true);//  16.71 FPS
 #ifdef MMX_ACTIVE
 #ifdef asm   
-      test("PicZoom_ThreeOrder_MMX"         ,PicZoom_ThreeOrder_MMX         , 70,true);//  33.44 FPS
+      test("PicZoom_ThreeOrder_MMX"         ,PicZoom_ThreeOrder_MMX         , 80,true);//  33.44 FPS
 #endif
 #endif
       //*/
- 
+
+
     std::cout<<std::endl<<" 测试完成. ";
     waitInputChar();
     return 0;
 }
+
